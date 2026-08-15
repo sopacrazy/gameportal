@@ -2,7 +2,7 @@
 
 Portal web de jogos HTML5/WebGL feito com React + Vite.
 
-Esta versao esta configurada como **frontend-only** para facilitar deploy na Vercel. O catalogo de jogos fica em um arquivo local do frontend.
+Esta versao esta configurada como **frontend-only** para facilitar deploy na Vercel. O catalogo carrega o feed JSON da GamePix no navegador e usa um arquivo local como fallback.
 
 ## Como instalar
 
@@ -45,7 +45,23 @@ O deploy usa o arquivo `vercel.json` da raiz:
 
 Nao existe backend no deploy atual.
 
-## Onde ficam os jogos
+## Feed da GamePix
+
+O feed usado fica em:
+
+```text
+https://feeds.gamepix.com/v2/json?sid=6A8M0&pagination=24&page=
+```
+
+O frontend carrega as primeiras paginas do feed em:
+
+```text
+frontend/src/services/api.js
+```
+
+Nao remova o parametro `sid`, porque ele identifica sua conta/estatisticas na GamePix.
+
+## Fallback local
 
 Edite:
 
