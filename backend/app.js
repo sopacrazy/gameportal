@@ -42,6 +42,10 @@ app.use((error, req, res, next) => {
   res.status(500).json({ message: "Erro interno do servidor." });
 });
 
-app.listen(port, () => {
-  console.log(`API rodando em http://localhost:${port}`);
-});
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`API rodando em http://localhost:${port}`);
+  });
+}
+
+module.exports = app;
