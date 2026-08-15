@@ -1,0 +1,20 @@
+{
+  "name": "game-portal-frontend",
+  "version": "1.0.0",
+  "description": "Frontend React + Vite para portal de jogos online.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0 --port 5173",
+    "build": "vite build",
+    "preview": "vite preview --port 5173"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^6.0.5",
+    "lucide-react": "^1.31.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.2",
+    "vite": "^8.2.1"
+  }
+}
