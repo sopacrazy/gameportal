@@ -35,8 +35,8 @@ function HomePage({ query }) {
     });
   }, [games, query]);
 
-  const continueGames = visibleGames.slice(4, 5);
-  const recommendedGames = visibleGames.slice(4, 14);
+  const continueGames = visibleGames.slice(0, 6);
+  const recommendedGames = visibleGames.slice(6, 18);
   const featuredGames = visibleGames.slice(0, 10);
   const hasCategory = (game, categories) => {
     const gameCategories = game.categories || [game.category];

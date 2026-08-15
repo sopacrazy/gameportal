@@ -255,12 +255,12 @@ main {
 
 .home-page {
   grid-column: 2;
-  padding: 24px 0 70px 10px;
+  padding: 22px 0 70px 6px;
   overflow: hidden;
 }
 
 .game-rail {
-  margin: 0 0 30px;
+  margin: 0 0 26px;
   padding: 0 0 0 18px;
 }
 
@@ -289,7 +289,7 @@ main {
   display: flex;
   align-items: end;
   gap: 12px;
-  margin: 0 0 16px;
+  margin: 0 0 14px;
 }
 
 .rail-heading h2,
@@ -315,7 +315,7 @@ main {
 .rail-strip {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 292px;
+  grid-auto-columns: 252px;
   gap: 10px;
   overflow-x: auto;
   overflow-y: hidden;
@@ -344,13 +344,13 @@ main {
 }
 
 .game-card-small {
-  width: 126px;
-  height: 126px;
+  width: 108px;
+  height: 108px;
 }
 
 .game-card-wide {
-  width: 292px;
-  height: 164px;
+  width: 252px;
+  height: 142px;
 }
 
 .game-card-medium {
@@ -803,20 +803,11 @@ main {
 
 @media (min-width: 1200px) {
   .rail-strip {
-    grid-auto-columns: 292px;
+    grid-auto-columns: 252px;
   }
 
   .game-rail:first-child .rail-strip {
-    grid-auto-columns: 126px;
-  }
-
-  .game-rail:nth-child(2) .game-card:first-child {
-    width: 584px;
-    height: 328px;
-  }
-
-  .game-rail:nth-child(2) .game-card:first-child img {
-    height: 100%;
+    grid-auto-columns: 108px;
   }
 }
 
