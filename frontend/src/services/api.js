@@ -71,8 +71,9 @@ export async function fetchGameBySlug(slug) {
 
 export async function searchGames(query) {
   const normalizedQuery = query.trim().toLowerCase();
+  const games = await fetchGames();
 
-  return fallbackGames.filter((game) => {
+  return games.filter((game) => {
     const categories = game.categories || [game.category];
     const tags = game.tags || [];
 

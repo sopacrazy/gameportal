@@ -38,17 +38,7 @@ function GamePage() {
   }
 
   function getEmbedUrl(selectedGame) {
-    if (
-      selectedGame.provider !== "gamedistribution" ||
-      !selectedGame.gameUrl.includes("html5.gamedistribution.com")
-    ) {
-      return selectedGame.gameUrl;
-    }
-
-    const embedUrl = new URL(selectedGame.gameUrl);
-    embedUrl.searchParams.set("gd_sdk_referrer_url", window.location.href);
-
-    return embedUrl.toString();
+    return selectedGame.gameUrl;
   }
 
   if (isLoading) {
@@ -96,8 +86,7 @@ function GamePage() {
             <div className="iframe-placeholder">
               <strong>URL do jogo ainda nao configurada.</strong>
               <p>
-                Substitua gameUrl em backend/data/games.js pela URL oficial
-                fornecida pela GameDistribution ou outro distribuidor autorizado.
+                Verifique o campo gameUrl no feed ou no fallback local do frontend.
               </p>
             </div>
           )}

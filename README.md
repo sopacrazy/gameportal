@@ -2,7 +2,7 @@
 
 Portal web de jogos HTML5/WebGL feito com React + Vite.
 
-Esta versao esta configurada como **frontend-only** para facilitar deploy na Vercel. O catalogo carrega o feed JSON da GamePix no navegador e usa um arquivo local como fallback.
+Esta versao esta configurada como **frontend-only** para facilitar deploy na Vercel. O catalogo carrega o feed JSON da GamePix no navegador.
 
 ## Como instalar
 
@@ -69,6 +69,8 @@ Edite:
 frontend/src/data/games.js
 ```
 
+No momento o fallback local esta vazio para manter somente jogos da GamePix no portal.
+
 Cada jogo usa esta estrutura:
 
 ```js
@@ -89,21 +91,11 @@ Cada jogo usa esta estrutura:
 }
 ```
 
-## GameDistribution
-
-Para jogos da GameDistribution, use o formato recomendado por eles:
-
-```text
-https://html5.gamedistribution.com/GAME_ID/?gd_sdk_referrer_url=URL_DA_PAGINA_DO_JOGO
-```
-
-No frontend, quando o jogo tem `provider: "gamedistribution"`, o parametro `gd_sdk_referrer_url` e ajustado automaticamente para a URL atual da pagina do jogo.
-
 ## Fluxo do site
 
 ```text
 abrir site
-carregar catalogo local
+carregar catalogo da GamePix
 clicar em um jogo
 abrir pagina do jogo
 jogo rodar dentro do iframe
