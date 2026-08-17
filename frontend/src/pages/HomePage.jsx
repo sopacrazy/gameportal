@@ -27,7 +27,7 @@ function readPlayedGames() {
   }
 }
 
-function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
+function HomePage({ query, onClearSearch, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
   const { t } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
@@ -193,6 +193,7 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
       return;
     }
 
+    onClearSearch?.();
     navigate(target === "home" ? "/" : `/category/${target}`);
     openFilteredSection(target, item.labelKey || item.label, item.categories || []);
   }
@@ -205,12 +206,13 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
     const item = navItems.find((navItem) => (navItem.key || navItem.action) === routeFilter);
 
     if (item) {
+      onClearSearch?.();
       setActiveFilter(item.key || item.action || "home");
       setActiveFilterLabel(item.labelKey || item.label);
       setActiveFilterCategories(item.categories || []);
       setVisibleCount(INITIAL_VISIBLE_GAMES);
     }
-  }, [routeFilter]);
+  }, [onClearSearch, routeFilter]);
 
   useEffect(() => {
     const hashFilter = location.hash.replace("#", "");

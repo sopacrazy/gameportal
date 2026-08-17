@@ -1,5 +1,5 @@
 import { Route, Routes, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ArrowUp } from "lucide-react";
 import Header from "./components/Header.jsx";
 import MobileBottomNav from "./components/MobileBottomNav.jsx";
@@ -15,6 +15,7 @@ function App() {
   const [homeResetSignal, setHomeResetSignal] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const clearSearch = useCallback(() => setQuery(""), []);
 
   useEffect(() => {
     document.title = t("app.title");
@@ -37,7 +38,7 @@ function App() {
   }, []);
 
   function handleLogoClick() {
-    setQuery("");
+    clearSearch();
     setHomeResetSignal((signal) => signal + 1);
     setIsMobileMenuOpen(false);
     requestAnimationFrame(() => {
@@ -64,6 +65,7 @@ function App() {
             element={
               <HomePage
                 query={query}
+                onClearSearch={clearSearch}
                 resetSignal={homeResetSignal}
                 isMobileMenuOpen={isMobileMenuOpen}
                 onMobileMenuClose={() => setIsMobileMenuOpen(false)}
@@ -75,6 +77,7 @@ function App() {
             element={
               <HomePage
                 query={query}
+                onClearSearch={clearSearch}
                 resetSignal={homeResetSignal}
                 isMobileMenuOpen={isMobileMenuOpen}
                 onMobileMenuClose={() => setIsMobileMenuOpen(false)}
