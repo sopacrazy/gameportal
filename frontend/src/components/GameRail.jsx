@@ -1,9 +1,11 @@
 import { ChevronRight } from "lucide-react";
 import { useRef } from "react";
 import GameCard from "./GameCard.jsx";
+import { useI18n } from "../i18n.jsx";
 
 function GameRail({ id, title, subtitle, games, tone = "plain", size = "wide", onOpen }) {
   const stripRef = useRef(null);
+  const { t } = useI18n();
 
   if (!games.length) {
     return null;
@@ -42,7 +44,7 @@ function GameRail({ id, title, subtitle, games, tone = "plain", size = "wide", o
         ))}
       </div>
         {games.length > 4 && (
-          <button type="button" className="rail-next-button" onClick={scrollNext} aria-label={`Avancar ${title}`}>
+          <button type="button" className="rail-next-button" onClick={scrollNext} aria-label={t("rail.next", { title })}>
             <ChevronRight size={30} />
           </button>
         )}

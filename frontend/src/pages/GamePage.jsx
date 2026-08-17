@@ -10,40 +10,36 @@ import {
   Star,
   Tag,
   Trophy,
-  Users
+  Users,
+  X
 } from "lucide-react";
+import AdSlot from "../components/AdSlot.jsx";
 import GameCard from "../components/GameCard.jsx";
 import SideNav from "../components/SideNav.jsx";
-import { fetchGameBySlug, fetchGames } from "../services/api.js";
+import { useI18n } from "../i18n.jsx";
+import { fetchGameBySlug, fetchGames, getGameDescription } from "../services/api.js";
 
-const PLAYED_GAMES_KEY = "gameportal.playedGames";
+const PLAYED_GAMES_KEY = "pitugames.playedGames";
 
-function formatDate(value) {
+function formatDate(value, locale, fallback) {
   if (!value) {
-    return "Nao informado";
+    return fallback;
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return "Nao informado";
+    return fallback;
   }
 
-  return new Intl.DateTimeFormat("pt-BR", {
+  return new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric"
   }).format(date);
 }
 
-function formatQuality(score) {
-  if (typeof score !== "number") {
-    return "8,0";
-  }
-
-  return (Math.max(0, Math.min(score, 1)) * 10).toFixed(1).replace(".", ",");
-}
-
 function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
+  const { formatScore, locale, t, tCategory } = useI18n();
   const { slug } = useParams();
   const iframeRef = useRef(null);
   const playerShellRef = useRef(null);
@@ -54,13 +50,46 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
   const [isMobilePlaying, setIsMobilePlaying] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchGameBySlug(slug), fetchGames()])
-      .then(([selectedGame, games]) => {
-        setGame(selectedGame);
-        setAllGames(games);
+    let isCancelled = false;
+
+    setIsLoading(true);
+    setGame(null);
+    setAllGames([]);
+    setIsMobilePlaying(false);
+
+    fetchGameBySlug(slug)
+      .then((selectedGame) => {
+        if (!isCancelled) {
+          setGame(selectedGame);
+        }
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    fetchGames()
+      .then((games) => {
+        if (!isCancelled) {
+          setAllGames(games);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
   }, [slug]);
+
+  useEffect(() => {
+    if (!isMobilePlaying) {
+      return undefined;
+    }
+
+    document.body.classList.add("game-fullscreen-lock");
+
+    return () => document.body.classList.remove("game-fullscreen-lock");
+  }, [isMobilePlaying]);
 
   useEffect(() => {
     if (!game?.slug) {
@@ -106,12 +135,17 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
   }, [allGames, game]);
 
   const relatedGames = sidebarGames.slice(0, 8);
-  const publishedDate = formatDate(game?.datePublished);
-  const modifiedDate = formatDate(game?.dateModified);
-  const quality = formatQuality(game?.qualityScore);
+  const gameDescription = game ? getGameDescription(game, locale) : "";
+  const publishedDate = formatDate(game?.datePublished, locale, t("app.notInformed"));
+  const modifiedDate = formatDate(game?.dateModified, locale, t("app.notInformed"));
+  const quality = formatScore(game?.qualityScore);
 
-  function openFullscreen() {
-    playerShellRef.current?.requestFullscreen?.();
+  async function openFullscreen() {
+    try {
+      await playerShellRef.current?.requestFullscreen?.();
+    } catch {
+      setIsPlayerFullscreen(false);
+    }
     requestAnimationFrame(() => iframeRef.current?.focus());
   }
 
@@ -135,7 +169,21 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
     return (
       <div className="portal-layout">
         <SideNav isOpen={isMobileMenuOpen} onClose={onMobileMenuClose} />
-        <p className="empty-state game-loading">Carregando jogo...</p>
+        <div className="page game-page">
+          <section className="game-loading-card" aria-live="polite">
+            <div className="game-loading-art" />
+            <div className="game-loading-copy">
+              <span>{t("game.loadingPrep")}</span>
+              <h1>{t("game.loadingTitle")}</h1>
+              <p>{t("game.loadingText")}</p>
+              <div className="game-loading-dots" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
@@ -145,8 +193,8 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
       <div className="portal-layout">
         <SideNav isOpen={isMobileMenuOpen} onClose={onMobileMenuClose} />
         <div className="page game-page">
-        <p className="empty-state">Jogo nao encontrado.</p>
-        <Link to="/" className="back-link">Voltar</Link>
+        <p className="empty-state">{t("game.notFound")}</p>
+        <Link to="/" className="back-link">{t("game.back")}</Link>
         </div>
       </div>
     );
@@ -159,7 +207,7 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
     ...(game.tags || []),
     game.orientation,
     "HTML5",
-    "Gratis"
+    t("game.free")
   ]
     .filter(Boolean)
     .map((tag) => String(tag))
@@ -175,13 +223,13 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
             <section className="mobile-game-launch">
               <img src={game.thumbnail} alt={game.title} />
               <div className="mobile-game-launch-copy">
-                <span>{game.category}</span>
+                <span>{tCategory(game.category)}</span>
                 <h1>{game.title}</h1>
-                <p>{game.description}</p>
+                <p>{gameDescription}</p>
               </div>
               <button type="button" className="mobile-play-main" onClick={startMobileGame}>
                 <Play size={20} />
-                Jogar
+                {t("game.play")}
               </button>
             </section>
 
@@ -190,6 +238,16 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
               ref={playerShellRef}
             >
               <div className="game-player">
+                {isMobilePlaying && (
+                  <button
+                    type="button"
+                    className="mobile-game-exit-button"
+                    onClick={exitFullscreen}
+                    aria-label={t("game.exitGame")}
+                  >
+                    <X size={18} />
+                  </button>
+                )}
                 {hasConfiguredUrl ? (
                   <iframe
                     ref={iframeRef}
@@ -201,9 +259,9 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
                   />
                 ) : (
                   <div className="iframe-placeholder">
-                    <strong>URL do jogo ainda nao configurada.</strong>
+                    <strong>{t("game.noUrlTitle")}</strong>
                     <p>
-                      Verifique o campo gameUrl no feed ou no fallback local do frontend.
+                      {t("game.noUrlText")}
                     </p>
                   </div>
                 )}
@@ -216,21 +274,22 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
               </div>
               <button type="button" className="invite-button">
                 <Users size={18} />
-                Convidar amigos
+                {t("game.invite")}
               </button>
               <button type="button" className="player-action">
                 <Star size={18} />
                 {quality}
               </button>
-              <button type="button" className="player-action" aria-label="Compartilhar">
+              <button type="button" className="player-action" aria-label={t("game.share")}>
                 <Share2 size={18} />
               </button>
-              <button type="button" className="player-action" onClick={openFullscreen} aria-label="Tela cheia">
+              <button type="button" className="player-action" onClick={openFullscreen} aria-label={t("game.fullscreen")}>
                 <Maximize2 size={18} />
               </button>
               {isPlayerFullscreen && (
                 <button type="button" className="player-action mobile-exit-fullscreen" onClick={exitFullscreen}>
-                  Sair
+                  <X size={18} />
+                  {t("game.exit")}
                 </button>
               )}
             </div>
@@ -238,9 +297,9 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
 
           <section className="game-info-panel">
             <div className="breadcrumbs">
-              <Link to="/">Jogos</Link>
+              <Link to="/">{t("game.games")}</Link>
               <span>/</span>
-              <span>{game.category}</span>
+              <span>{tCategory(game.category)}</span>
               <span>/</span>
               <strong>{game.title}</strong>
             </div>
@@ -250,37 +309,37 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
                 <h1>{game.title}</h1>
                 <button type="button" className="share-button">
                   <Share2 size={18} />
-                  Compartilhar
+                  {t("game.share")}
                 </button>
 
                 <dl className="game-facts">
                   <div>
-                    <dt>Desenvolvedor:</dt>
-                    <dd>GamePix</dd>
+                    <dt>{t("game.developer")}</dt>
+                    <dd>{game.providerName || game.provider || t("app.notInformed")}</dd>
                   </div>
                   <div>
-                    <dt>Classificacao:</dt>
-                    <dd>{quality} <small>(qualidade do catalogo)</small></dd>
+                    <dt>{t("game.rating")}</dt>
+                    <dd>{quality} <small>{t("game.catalogQuality")}</small></dd>
                   </div>
                   <div>
-                    <dt>Lancado:</dt>
+                    <dt>{t("game.released")}</dt>
                     <dd>{publishedDate}</dd>
                   </div>
                   <div>
-                    <dt>Ultima atualizacao:</dt>
+                    <dt>{t("game.updated")}</dt>
                     <dd>{modifiedDate}</dd>
                   </div>
                   <div>
-                    <dt>Motor de jogo:</dt>
+                    <dt>{t("game.engine")}</dt>
                     <dd>Externally hosted (iframe)</dd>
                   </div>
                   <div>
-                    <dt>Plataforma:</dt>
-                    <dd>Navegador (computador, celular, tablet)</dd>
+                    <dt>{t("game.platform")}</dt>
+                    <dd>{t("game.platformValue")}</dd>
                   </div>
                   <div>
-                    <dt>Orientacao:</dt>
-                    <dd>{game.orientation || "Panorama"}</dd>
+                    <dt>{t("game.orientation")}</dt>
+                    <dd>{game.orientation || t("game.panorama")}</dd>
                   </div>
                 </dl>
 
@@ -298,7 +357,7 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
                 </div>
                 <div>
                   <Tag size={22} />
-                  <span>{game.category}</span>
+                  <span>{tCategory(game.category)}</span>
                 </div>
                 <div>
                   <CalendarDays size={22} />
@@ -306,47 +365,39 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
                 </div>
                 <a href={game.gameUrl} target="_blank" rel="noreferrer">
                   <ExternalLink size={20} />
-                  Abrir original
+                  {t("game.openOriginal")}
                 </a>
               </div>
             </div>
           </section>
 
           <section className="game-copy-panel">
-            <p>{game.description}</p>
+            <p>{gameDescription}</p>
 
-            <h2>Como jogar</h2>
-            <p>
-              Clique no player acima e aguarde o carregamento. Cada jogo pode ter
-              comandos proprios, mas a maioria funciona com mouse, toque na tela
-              ou teclado.
-            </p>
+            <h2>{t("game.howToPlay")}</h2>
+            <p>{t("game.howToPlayText")}</p>
 
-            <h2>Modos de jogo principais</h2>
-            <p>
-              Explore a categoria {game.category} e descubra fases, desafios e
-              objetivos diferentes conforme o jogo escolhido.
-            </p>
+            <h2>{t("game.mainModes")}</h2>
+            <p>{t("game.mainModesText", { category: tCategory(game.category) })}</p>
 
-            <h2>Mais jogos como este</h2>
-            <p>
-              Se voce gostou de {game.title}, veja tambem outros jogos da mesma
-              categoria na lista ao lado e nos relacionados abaixo.
-            </p>
+            <h2>{t("game.moreLikeThis")}</h2>
+            <p>{t("game.moreLikeThisText", { title: game.title })}</p>
 
-            <h2>Controles</h2>
+            <h2>{t("game.controls")}</h2>
             <ul>
-              <li>Mouse ou toque = selecionar e interagir</li>
-              <li>Setas ou WASD = mover quando o jogo permitir</li>
-              <li>Espaco = acao principal em alguns jogos</li>
-              <li>Tela cheia = jogar com mais conforto</li>
+              <li>{t("game.controlMouse")}</li>
+              <li>{t("game.controlMove")}</li>
+              <li>{t("game.controlAction")}</li>
+              <li>{t("game.controlFullscreen")}</li>
             </ul>
           </section>
+
+          <AdSlot variant="mobile" className="mobile-game-ad" />
 
           <section className="related-section">
             <div className="section-title">
               <Trophy size={30} />
-              <h2>Jogos relacionados</h2>
+              <h2>{t("game.related")}</h2>
             </div>
             <div className="related-strip">
               {relatedGames.map((item, index) => (
@@ -362,15 +413,9 @@ function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
         </div>
 
         <aside className="game-right-rail">
-          <div className="ad-card">
-            <span>Anuncio</span>
-            <div>
-              <strong>Publicidade</strong>
-              <p>Espaco reservado para campanha.</p>
-            </div>
-          </div>
+          <AdSlot />
 
-          <h2>Jogar a seguir</h2>
+          <h2>{t("game.next")}</h2>
           <div className="next-games-grid">
             {sidebarGames.map((item, index) => (
               <GameCard

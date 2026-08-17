@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import FeaturedGameMosaic from "../components/FeaturedGameMosaic.jsx";
 import GameGrid from "../components/GameGrid.jsx";
+import GameGridSkeleton from "../components/GameGridSkeleton.jsx";
 import GameRail from "../components/GameRail.jsx";
 import SideNav, { navItems } from "../components/SideNav.jsx";
-import { fetchGames } from "../services/api.js";
+import { useI18n } from "../i18n.jsx";
+import { fetchGames, matchesGameSearch } from "../services/api.js";
 
-const PLAYED_GAMES_KEY = "gameportal.playedGames";
+const PLAYED_GAMES_KEY = "pitugames.playedGames";
 const INITIAL_VISIBLE_GAMES = 24;
 const LOAD_MORE_BATCH = 24;
 const PAGE_STEP = 3;
@@ -26,7 +28,10 @@ function readPlayedGames() {
 }
 
 function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
+  const { t } = useI18n();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { filter: routeFilter } = useParams();
   const loadMoreRef = useRef(null);
   const [games, setGames] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +39,7 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
   const [feedPages, setFeedPages] = useState(3);
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_GAMES);
   const [activeFilter, setActiveFilter] = useState("home");
-  const [activeFilterLabel, setActiveFilterLabel] = useState("Pagina Inicial");
+  const [activeFilterLabel, setActiveFilterLabel] = useState("nav.home");
   const [activeFilterCategories, setActiveFilterCategories] = useState([]);
   const [playedSlugs, setPlayedSlugs] = useState([]);
 
@@ -61,7 +66,7 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
     }
 
     setActiveFilter("home");
-    setActiveFilterLabel("Pagina Inicial");
+    setActiveFilterLabel("nav.home");
     setActiveFilterCategories([]);
     setVisibleCount(INITIAL_VISIBLE_GAMES);
     requestAnimationFrame(() => {
@@ -71,35 +76,35 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
 
   const filterLabel = useMemo(() => {
     if (activeFilter === "all") {
-      return "Todos os jogos";
+      return t("home.allGames");
     }
 
     if (activeFilter === "new") {
-      return "Novos jogos";
+      return t("nav.new");
     }
 
     if (activeFilter === "recent") {
-      return "Recentes";
+      return t("nav.recent");
     }
 
     if (activeFilter === "trending") {
-      return "Trending";
+      return t("nav.trending");
     }
 
     if (activeFilter === "ranking") {
-      return "Suba no Ranking";
+      return t("home.ranking");
     }
 
     if (activeFilter === "brain") {
-      return "Treine seu cerebro";
+      return t("home.brain");
     }
 
     if (activeFilter === "adrenaline") {
-      return "Adrenalina";
+      return t("home.adrenaline");
     }
 
-    return activeFilterLabel;
-  }, [activeFilter, activeFilterLabel]);
+    return activeFilterLabel.includes(".") ? t(activeFilterLabel) : activeFilterLabel;
+  }, [activeFilter, activeFilterLabel, t]);
 
   const visibleGames = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -112,13 +117,7 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
       const searchableCategories = [game.category, ...categories, ...tags]
         .filter(Boolean)
         .map((category) => String(category).toLowerCase());
-      const searchMatches =
-        !normalizedQuery ||
-        game.title.toLowerCase().includes(normalizedQuery) ||
-        game.category.toLowerCase().includes(normalizedQuery) ||
-        game.description.toLowerCase().includes(normalizedQuery) ||
-        categories.some((category) => category.toLowerCase().includes(normalizedQuery)) ||
-        tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
+      const searchMatches = !normalizedQuery || matchesGameSearch(game, normalizedQuery);
 
       if (!searchMatches) {
         return false;
@@ -157,10 +156,10 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
   const canShowMoreLocal = visibleCount < visibleGames.length;
   const hasMoreFeedPages = feedPages < MAX_FEED_PAGES;
   const loadStatusText = isLoadingMore
-    ? "Carregando mais jogos..."
+    ? t("home.loadingMore")
     : canShowMoreLocal || hasMoreFeedPages
-      ? "Continue rolando para ver mais"
-      : "Todos os jogos desta categoria foram carregados";
+      ? t("home.keepScrolling")
+      : t("home.allLoaded");
   const hasCategory = (game, categories) => {
     const gameCategories = game.categories || [game.category];
     return gameCategories.some((category) => categories.includes(category));
@@ -187,8 +186,31 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
   }
 
   function handleFilterSelect(item) {
-    openFilteredSection(item.key || item.action || "home", item.label, item.categories || []);
+    const target = item.key || item.action || "home";
+
+    if (target === "search") {
+      navigate("/search");
+      return;
+    }
+
+    navigate(target === "home" ? "/" : `/category/${target}`);
+    openFilteredSection(target, item.labelKey || item.label, item.categories || []);
   }
+
+  useEffect(() => {
+    if (!routeFilter) {
+      return;
+    }
+
+    const item = navItems.find((navItem) => (navItem.key || navItem.action) === routeFilter);
+
+    if (item) {
+      setActiveFilter(item.key || item.action || "home");
+      setActiveFilterLabel(item.labelKey || item.label);
+      setActiveFilterCategories(item.categories || []);
+      setVisibleCount(INITIAL_VISIBLE_GAMES);
+    }
+  }, [routeFilter]);
 
   useEffect(() => {
     const hashFilter = location.hash.replace("#", "");
@@ -207,7 +229,7 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
     const item = navItems.find((navItem) => (navItem.key || navItem.action) === hashFilter);
 
     if (item) {
-      openFilteredSection(item.key || item.action || "home", item.label, item.categories || []);
+      openFilteredSection(item.key || item.action || "home", item.labelKey || item.label, item.categories || []);
     }
   }, [location.hash]);
 
@@ -291,12 +313,18 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
       />
       <div className="page home-page">
         {isLoading ? (
-          <p className="empty-state">Carregando jogos...</p>
+          <>
+            <div className="section-title">
+              <h1>{t("app.loadingGames")}</h1>
+              <p>{t("game.loadingText")}</p>
+            </div>
+            <GameGridSkeleton />
+          </>
         ) : query.trim() ? (
           <>
             <div className="section-title">
-              <h1>Resultados para "{query}"</h1>
-              <p>{visibleGames.length} jogos encontrados</p>
+              <h1>{t("home.resultsFor", { query })}</h1>
+              <p>{t("home.resultsFound", { count: visibleGames.length })}</p>
             </div>
             <GameGrid games={visibleGames} />
           </>
@@ -305,7 +333,7 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
             <div className="section-title">
               <div>
                 <h1>{filterLabel}</h1>
-                <p>{visibleGames.length} jogos encontrados</p>
+                <p>{t("home.resultsFound", { count: visibleGames.length })}</p>
               </div>
             </div>
             <GameGrid games={allGamesToShow} />
@@ -315,40 +343,40 @@ function HomePage({ query, resetSignal, isMobileMenuOpen, onMobileMenuClose }) {
           </section>
         ) : (
           <>
-            <GameRail id="continue" title="Continuar jogando" games={continueGames} size="small" />
+            <GameRail id="continue" title={t("home.continuePlaying")} games={continueGames} size="small" />
             <FeaturedGameMosaic
-              title="As melhores opcoes para voce"
+              title={t("home.bestForYou")}
               games={recommendedGames}
             />
-            <GameRail id="featured" title="Jogos em destaque" games={featuredGames} size="wide" />
+            <GameRail id="featured" title={t("home.featured")} games={featuredGames} size="wide" />
             <GameRail
-              title="Suba no Ranking"
-              subtitle="Compete com outros jogadores e chega ao topo."
+              title={t("home.ranking")}
+              subtitle={t("home.rankingSubtitle")}
               games={[...actionGames, ...featuredGames].slice(0, 8)}
               tone="ranking"
               size="wide"
-              onOpen={() => openFilteredSection("ranking", "Suba no Ranking")}
+              onOpen={() => openFilteredSection("ranking", "home.ranking")}
             />
             <GameRail
-              title="Treine seu cerebro"
-              subtitle="Quebra-cabecas, enigmas e desafios rapidos para jogar agora."
+              title={t("home.brain")}
+              subtitle={t("home.brainSubtitle")}
               games={puzzleGames}
               tone="brain"
               size="wide"
-              onOpen={() => openFilteredSection("brain", "Treine seu cerebro")}
+              onOpen={() => openFilteredSection("brain", "home.brain")}
             />
             <GameRail
-              title="Adrenalina"
-              subtitle="Jogos com aventura, velocidade e reflexos."
+              title={t("home.adrenaline")}
+              subtitle={t("home.adrenalineSubtitle")}
               games={[...adventureGames, ...actionGames]}
               tone="adrenaline"
               size="wide"
-              onOpen={() => openFilteredSection("adrenaline", "Adrenalina")}
+              onOpen={() => openFilteredSection("adrenaline", "home.adrenaline")}
             />
             <section id="games" className="all-games-section">
               <div className="section-title">
-                <h2>Todos os jogos</h2>
-                <p>{visibleGames.length} jogos carregados no portal.</p>
+                <h2>{t("home.allGames")}</h2>
+                <p>{t("home.loadedCount", { count: visibleGames.length })}</p>
               </div>
               <GameGrid games={allGamesToShow} />
               <div ref={loadMoreRef} className="infinite-load-status">

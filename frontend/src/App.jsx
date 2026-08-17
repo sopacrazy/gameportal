@@ -6,13 +6,19 @@ import MobileBottomNav from "./components/MobileBottomNav.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import GamePage from "./pages/GamePage.jsx";
 import SearchPage from "./pages/SearchPage.jsx";
+import { useI18n } from "./i18n.jsx";
 
 function App() {
+  const { t } = useI18n();
   const location = useLocation();
   const [query, setQuery] = useState("");
   const [homeResetSignal, setHomeResetSignal] = useState(0);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    document.title = t("app.title");
+  }, [t]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0 });
@@ -65,6 +71,17 @@ function App() {
             }
           />
           <Route
+            path="/category/:filter"
+            element={
+              <HomePage
+                query={query}
+                resetSignal={homeResetSignal}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuClose={() => setIsMobileMenuOpen(false)}
+              />
+            }
+          />
+          <Route
             path="/game/:slug"
             element={
               <GamePage
@@ -85,7 +102,7 @@ function App() {
         </Routes>
       </main>
       {showScrollTop && (
-        <button type="button" className="scroll-top-button" onClick={scrollToTop} aria-label="Voltar ao topo">
+        <button type="button" className="scroll-top-button" onClick={scrollToTop} aria-label={t("app.scrollTop")}>
           <ArrowUp size={20} />
         </button>
       )}

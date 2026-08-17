@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import GameGrid from "../components/GameGrid.jsx";
+import GameGridSkeleton from "../components/GameGridSkeleton.jsx";
 import SideNav from "../components/SideNav.jsx";
-import { fetchGames } from "../services/api.js";
+import { useI18n } from "../i18n.jsx";
+import { fetchGames, matchesGameSearch } from "../services/api.js";
 
 function SearchPage({ isMobileMenuOpen, onMobileMenuClose }) {
+  const { t } = useI18n();
   const [games, setGames] = useState([]);
   const [query, setQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
@@ -22,18 +25,7 @@ function SearchPage({ isMobileMenuOpen, onMobileMenuClose }) {
       return games.slice(0, 24);
     }
 
-    return games.filter((game) => {
-      const categories = game.categories || [game.category];
-      const tags = game.tags || [];
-
-      return (
-        game.title.toLowerCase().includes(normalizedQuery) ||
-        game.category.toLowerCase().includes(normalizedQuery) ||
-        game.description.toLowerCase().includes(normalizedQuery) ||
-        categories.some((category) => category.toLowerCase().includes(normalizedQuery)) ||
-        tags.some((tag) => tag.toLowerCase().includes(normalizedQuery))
-      );
-    });
+    return games.filter((game) => matchesGameSearch(game, normalizedQuery));
   }, [games, query]);
 
   return (
@@ -43,8 +35,8 @@ function SearchPage({ isMobileMenuOpen, onMobileMenuClose }) {
         <section className="search-panel">
           <div className="section-title">
             <div>
-              <h1>Procurar jogos</h1>
-              <p>{query.trim() ? `${results.length} resultados encontrados` : "Digite o nome ou categoria do jogo"}</p>
+              <h1>{t("search.title")}</h1>
+              <p>{query.trim() ? t("search.resultsFound", { count: results.length }) : t("search.hint")}</p>
             </div>
           </div>
 
@@ -53,14 +45,14 @@ function SearchPage({ isMobileMenuOpen, onMobileMenuClose }) {
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Pesquisar jogos e categorias"
+              placeholder={t("search.placeholder")}
               autoFocus
             />
             <Search size={24} />
           </label>
         </section>
 
-        {isLoading ? <p className="empty-state">Carregando jogos...</p> : <GameGrid games={results} />}
+        {isLoading ? <GameGridSkeleton count={10} /> : <GameGrid games={results} />}
       </div>
     </div>
   );

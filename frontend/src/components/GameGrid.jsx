@@ -1,8 +1,11 @@
 import GameCard from "./GameCard.jsx";
+import { useI18n } from "../i18n.jsx";
 
 function GameGrid({ games, priorityCount = 24 }) {
+  const { t } = useI18n();
+
   if (!games.length) {
-    return <p className="empty-state">Nenhum jogo encontrado.</p>;
+    return <p className="empty-state">{t("app.noGames")}</p>;
   }
 
   return (

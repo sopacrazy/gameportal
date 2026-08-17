@@ -1,7 +1,7 @@
 {
-  "name": "game-portal-frontend",
+  "name": "pitugames-frontend",
   "version": "1.0.0",
-  "description": "Frontend React + Vite para portal de jogos online.",
+  "description": "Frontend React + Vite para o portal Pitugames.",
   "private": true,
   "type": "module",
   "scripts": {

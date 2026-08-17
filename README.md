@@ -1,4 +1,4 @@
-# Game Portal
+# Pitugames
 
 Portal web de jogos HTML5/WebGL feito com React + Vite.
 
@@ -118,7 +118,7 @@ Edite:
 frontend/src/data/games.js
 ```
 
-No momento o fallback local esta vazio para manter somente jogos da GamePix no portal.
+No momento o fallback local esta vazio para manter somente jogos da GamePix no Pitugames.
 
 Cada jogo usa esta estrutura:
 
