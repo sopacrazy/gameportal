@@ -1,0 +1,17 @@
+{
+  "appId": "com.sopacrazy.gameportal",
+  "appName": "Game Portal",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "*.gamepix.com",
+      "*.smadex.com",
+      "*.googlesyndication.com",
+      "*.doubleclick.net",
+      "*.google.com",
+      "*.googleapis.com",
+      "*.gstatic.com"
+    ]
+  }
+}

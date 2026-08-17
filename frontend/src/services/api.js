@@ -20,7 +20,7 @@ function normalizeGamePixGame(item, index, page) {
     providerGameId: item.id,
     title: item.title,
     slug: item.namespace,
-    description: item.description || "Jogo HTML5 da GamePix.",
+    description: item.description || "Jogo online pronto para jogar.",
     category,
     categories: [category],
     tags: [item.category, item.orientation].filter(Boolean),
@@ -47,16 +47,16 @@ async function fetchGamePixPage(page) {
   return (feed.items || []).map((item, index) => normalizeGamePixGame(item, index, page));
 }
 
-async function fetchGamePixGames() {
-  const pages = Array.from({ length: GAMEPIX_PAGES_TO_LOAD }, (_, index) => index + 1);
+async function fetchGamePixGames(pageCount = GAMEPIX_PAGES_TO_LOAD) {
+  const pages = Array.from({ length: pageCount }, (_, index) => index + 1);
   const results = await Promise.all(pages.map(fetchGamePixPage));
 
   return results.flat();
 }
 
-export async function fetchGames() {
+export async function fetchGames(pageCount = GAMEPIX_PAGES_TO_LOAD) {
   try {
-    const gamePixGames = await fetchGamePixGames();
+    const gamePixGames = await fetchGamePixGames(pageCount);
     return gamePixGames.length ? gamePixGames : fallbackGames;
   } catch (error) {
     console.warn(error.message);
@@ -65,7 +65,7 @@ export async function fetchGames() {
 }
 
 export async function fetchGameBySlug(slug) {
-  const games = await fetchGames();
+  const games = await fetchGames(8);
   return games.find((game) => game.slug === slug);
 }
 

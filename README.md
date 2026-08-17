@@ -31,6 +31,55 @@ cd frontend
 npm run build
 ```
 
+## APK Android com Capacitor
+
+O projeto Android fica em:
+
+```text
+frontend/android
+```
+
+Comandos principais:
+
+```bash
+cd frontend
+npm run cap:sync
+```
+
+Para abrir no Android Studio:
+
+```bash
+cd frontend
+npm run android
+```
+
+Para gerar APK debug pelo terminal:
+
+```bash
+cd frontend
+npm run android:debug
+```
+
+O APK debug, quando o ambiente Android estiver configurado, sera gerado em:
+
+```text
+frontend/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Requisitos da maquina para compilar:
+
+```text
+JDK valido no JAVA_HOME
+Android Studio ou Android SDK instalado
+SDK Android 36 instalado
+```
+
+Neste computador, o projeto Capacitor ja foi criado e sincronizado, mas a compilacao parou porque `JAVA_HOME` aponta para uma pasta que nao existe:
+
+```text
+C:\Program Files\Android\Android Studio\jbr
+```
+
 ## Deploy na Vercel
 
 O deploy usa o arquivo `vercel.json` da raiz:

@@ -5,16 +5,18 @@ import {
   ExternalLink,
   Maximize2,
   MonitorSmartphone,
+  Play,
   Share2,
   Star,
   Tag,
   Trophy,
-  Users,
-  ArrowUp
+  Users
 } from "lucide-react";
 import GameCard from "../components/GameCard.jsx";
 import SideNav from "../components/SideNav.jsx";
 import { fetchGameBySlug, fetchGames } from "../services/api.js";
+
+const PLAYED_GAMES_KEY = "gameportal.playedGames";
 
 function formatDate(value) {
   if (!value) {
@@ -41,13 +43,15 @@ function formatQuality(score) {
   return (Math.max(0, Math.min(score, 1)) * 10).toFixed(1).replace(".", ",");
 }
 
-function GamePage() {
+function GamePage({ isMobileMenuOpen, onMobileMenuClose }) {
   const { slug } = useParams();
   const iframeRef = useRef(null);
-  const playerRef = useRef(null);
+  const playerShellRef = useRef(null);
   const [game, setGame] = useState(null);
   const [allGames, setAllGames] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPlayerFullscreen, setIsPlayerFullscreen] = useState(false);
+  const [isMobilePlaying, setIsMobilePlaying] = useState(false);
 
   useEffect(() => {
     Promise.all([fetchGameBySlug(slug), fetchGames()])
@@ -57,6 +61,34 @@ function GamePage() {
       })
       .finally(() => setIsLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    if (!game?.slug) {
+      return;
+    }
+
+    try {
+      const previousSlugs = JSON.parse(localStorage.getItem(PLAYED_GAMES_KEY) || "[]");
+      const nextSlugs = [game.slug, ...previousSlugs.filter((item) => item !== game.slug)].slice(0, 12);
+      localStorage.setItem(PLAYED_GAMES_KEY, JSON.stringify(nextSlugs));
+    } catch {
+      localStorage.setItem(PLAYED_GAMES_KEY, JSON.stringify([game.slug]));
+    }
+  }, [game]);
+
+  useEffect(() => {
+    function handleFullscreenChange() {
+      const isFullscreen = document.fullscreenElement === playerShellRef.current;
+      setIsPlayerFullscreen(isFullscreen);
+      if (!isFullscreen) {
+        setIsMobilePlaying(false);
+      }
+    }
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, []);
 
   const sidebarGames = useMemo(() => {
     if (!game) {
@@ -79,11 +111,20 @@ function GamePage() {
   const quality = formatQuality(game?.qualityScore);
 
   function openFullscreen() {
-    iframeRef.current?.requestFullscreen?.();
+    playerShellRef.current?.requestFullscreen?.();
+    requestAnimationFrame(() => iframeRef.current?.focus());
   }
 
-  function scrollToPlayer() {
-    playerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  function startMobileGame() {
+    setIsMobilePlaying(true);
+    openFullscreen();
+  }
+
+  function exitFullscreen() {
+    setIsMobilePlaying(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    }
   }
 
   function getEmbedUrl(selectedGame) {
@@ -93,7 +134,7 @@ function GamePage() {
   if (isLoading) {
     return (
       <div className="portal-layout">
-        <SideNav />
+        <SideNav isOpen={isMobileMenuOpen} onClose={onMobileMenuClose} />
         <p className="empty-state game-loading">Carregando jogo...</p>
       </div>
     );
@@ -102,7 +143,7 @@ function GamePage() {
   if (!game) {
     return (
       <div className="portal-layout">
-        <SideNav />
+        <SideNav isOpen={isMobileMenuOpen} onClose={onMobileMenuClose} />
         <div className="page game-page">
         <p className="empty-state">Jogo nao encontrado.</p>
         <Link to="/" className="back-link">Voltar</Link>
@@ -127,19 +168,36 @@ function GamePage() {
 
   return (
     <div className="portal-layout">
-      <SideNav />
+      <SideNav isOpen={isMobileMenuOpen} onClose={onMobileMenuClose} />
       <div className="page game-page">
         <section className="game-detail-layout">
           <div className="game-detail-main">
-            <article className="game-player-shell" ref={playerRef}>
+            <section className="mobile-game-launch">
+              <img src={game.thumbnail} alt={game.title} />
+              <div className="mobile-game-launch-copy">
+                <span>{game.category}</span>
+                <h1>{game.title}</h1>
+                <p>{game.description}</p>
+              </div>
+              <button type="button" className="mobile-play-main" onClick={startMobileGame}>
+                <Play size={20} />
+                Jogar
+              </button>
+            </section>
+
+            <article
+              className={`game-player-shell ${isMobilePlaying ? "mobile-playing" : ""}`}
+              ref={playerShellRef}
+            >
               <div className="game-player">
                 {hasConfiguredUrl ? (
                   <iframe
                     ref={iframeRef}
                     src={embedUrl}
                     title={game.title}
-                    allow="fullscreen; autoplay"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gamepad; gyroscope; payment; web-share"
                     allowFullScreen
+                    tabIndex="0"
                   />
                 ) : (
                   <div className="iframe-placeholder">
@@ -170,6 +228,11 @@ function GamePage() {
               <button type="button" className="player-action" onClick={openFullscreen} aria-label="Tela cheia">
                 <Maximize2 size={18} />
               </button>
+              {isPlayerFullscreen && (
+                <button type="button" className="player-action mobile-exit-fullscreen" onClick={exitFullscreen}>
+                  Sair
+                </button>
+              )}
             </div>
             </article>
 
@@ -321,10 +384,6 @@ function GamePage() {
           </aside>
         </section>
 
-        <button type="button" className="back-to-game" onClick={scrollToPlayer}>
-          <ArrowUp size={20} />
-          Voltar pro jogo
-        </button>
       </div>
     </div>
   );

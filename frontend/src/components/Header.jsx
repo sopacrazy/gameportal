@@ -1,20 +1,21 @@
 import { Link } from "react-router-dom";
 import { Bell, Bookmark, Menu, Search, Users } from "lucide-react";
 
-function Header({ query, onSearch }) {
+function Header({ query, onSearch, onLogoClick, onMenuToggle }) {
   return (
     <header className="site-header">
-      <button className="icon-button menu-button" type="button" aria-label="Abrir menu">
+      <button className="icon-button menu-button" type="button" onClick={onMenuToggle} aria-label="Abrir menu">
         <Menu size={26} />
       </button>
-      <Link to="/" className="brand">
+      <Link to="/" className="brand" onClick={onLogoClick}>
         <span className="brand-mark">G</span>
         <span>game<br />portal</span>
       </Link>
       <label className="top-search">
-        <input
-          type="search"
-          value={query}
+          <input
+            id="portal-search"
+            type="search"
+            value={query}
           onChange={(event) => onSearch(event.target.value)}
           placeholder="Pesquisar jogos e categorias"
         />
