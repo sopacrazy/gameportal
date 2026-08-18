@@ -923,8 +923,7 @@ main {
   border-radius: 50px;
 }
 
-.mobile-open-game,
-.mobile-exit-fullscreen {
+.mobile-open-game {
   display: none;
 }
 
